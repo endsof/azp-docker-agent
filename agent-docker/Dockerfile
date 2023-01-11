@@ -1,32 +1,45 @@
-FROM ubuntu:18.04
-LABEL pipeline_agent_version = "2.213.2"
+FROM ubuntu:20.04
 
-# To make it easier for build and release pipelines to run apt-get,
-# configure apt to not require confirmation (assume the -y argument by default)
-ENV DEBIAN_FRONTEND=noninteractive
-RUN echo "APT::Get::Assume-Yes \"true\";" > /etc/apt/apt.conf.d/90assumeyes
-
-RUN apt-get update \
-&& apt-get install -y --no-install-recommends \
-        ca-certificates \
-        curl \
-        jq \
-        git \
-        iputils-ping \
-        libcurl4 \
-        libunwind8 \
-        netcat \
-        libssl1.0
+# Install Azure CLI from Microsoft's repositories (https://learn.microsoft.com/ru-ru/azure/devops/pipelines/agents/docker?view=azure-devops)
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y -qq --no-install-recommends \
+    apt-transport-https \
+    apt-utils \
+    ca-certificates \
+    curl \
+    git \
+    iputils-ping \
+    jq \
+    lsb-release \
+    software-properties-common
 
 WORKDIR /azp/agent
 
 COPY ./install_agent.sh .
-RUN chmod +x install_agent.sh
-RUN ./install_agent.sh
+RUN chmod +x install_agent.sh && ./install_agent.sh
+
+ENV TARGETARCH=linux-x64
 
 WORKDIR /azp
 
 COPY ./start.sh .
 RUN chmod +x start.sh
 
-CMD ["./start.sh"]
+# Install Docker
+RUN curl -sL https://get.docker.com | bash
+RUN usermod -aG docker $(whoami)
+
+# Install Docker-Compose
+RUN curl -L "https://github.com/docker/compose/releases/download/2.15.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose \
+    && chmod +x /usr/local/bin/docker-compose
+
+# Install Microsoft .NET Core SDK 3.1 (for GitVersion task)
+RUN curl https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -o packages-microsoft-prod.deb \
+    && dpkg -i packages-microsoft-prod.deb \
+    && apt-get update && apt-get install -y dotnet-sdk-3.1
+
+# Install requirements for CD-Confluence
+RUN apt -y install python3-pip
+RUN pip install atlassian-python-api mistune
+
+ENTRYPOINT [ "./start.sh" ]
