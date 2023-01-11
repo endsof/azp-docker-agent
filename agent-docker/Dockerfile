@@ -31,9 +31,10 @@ RUN usermod -aG docker $(whoami)
 RUN curl -L "https://github.com/docker/compose/releases/download/2.15.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose \
     && chmod +x /usr/local/bin/docker-compose
 
-# Install Microsoft .NET Core SDK 3.1 (for GitVersion task)
+# Install Microsoft .NET Core SDK 2.1 (for GitVersion task)
 RUN curl https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -o packages-microsoft-prod.deb \
     && dpkg -i packages-microsoft-prod.deb \
-    && apt-get update && apt-get install -y dotnet-sdk-3.1
+    && apt-get update \ 
+    && apt-get install -y dotnet-sdk-2.1
 
 ENTRYPOINT [ "./start.sh" ]
