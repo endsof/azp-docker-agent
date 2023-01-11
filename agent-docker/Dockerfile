@@ -1,6 +1,6 @@
 FROM ubuntu:20.04
 
-# Install Azure CLI from Microsoft's repositories (https://learn.microsoft.com/ru-ru/azure/devops/pipelines/agents/docker?view=azure-devops)
+# Install Azure Dependencies (https://learn.microsoft.com/ru-ru/azure/devops/pipelines/agents/docker?view=azure-devops)
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y -qq --no-install-recommends \
     apt-transport-https \
@@ -11,12 +11,11 @@ RUN apt-get update && apt-get install -y -qq --no-install-recommends \
     iputils-ping \
     jq \
     lsb-release \
-    software-properties-common
+    software-properties-common \
+    netcat \
+    python3-pip
 
-WORKDIR /azp/agent
-
-COPY ./install_agent.sh .
-RUN chmod +x install_agent.sh && ./install_agent.sh
+# RUN curl -sL https://aka.ms/InstallAzureCLIDeb | bash
 
 ENV TARGETARCH=linux-x64
 
@@ -39,7 +38,6 @@ RUN curl https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-p
     && apt-get update && apt-get install -y dotnet-sdk-3.1
 
 # Install requirements for CD-Confluence
-RUN apt -y install python3-pip
 RUN pip install atlassian-python-api mistune
 
 ENTRYPOINT [ "./start.sh" ]
