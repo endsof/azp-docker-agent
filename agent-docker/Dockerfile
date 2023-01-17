@@ -17,7 +17,8 @@ RUN apt-get update \
         libicu60 \
         libunwind8 \
         netcat \
-        libssl1.0
+        libssl1.0 \
+        python3-pip
 
 WORKDIR /azp
 
