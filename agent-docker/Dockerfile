@@ -17,8 +17,7 @@ RUN apt-get update \
         libicu60 \
         libunwind8 \
         netcat \
-        libssl1.0 \
-        python3-pip
+        libssl1.0
 
 WORKDIR /azp
 
@@ -41,3 +40,12 @@ RUN curl -LsS https://packages.microsoft.com/config/ubuntu/18.04/packages-micros
     && rm packages-microsoft-prod.deb \
     && apt-get update \
     && apt-get install -y --no-install-recommends dotnet-sdk-2.1
+
+# Install dependencies for CD-Confluence
+RUN apt-get install python3-pip \
+    && pip3 install \
+        setuptools \
+        atlassian-python-api==3.28.1 \
+        mistune==2.0.4
+
+CMD ["./start.sh"]
