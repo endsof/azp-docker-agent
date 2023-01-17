@@ -1,40 +1,42 @@
-FROM ubuntu:20.04
+FROM ubuntu:18.04
+LABEL pipeline_agent_version = "2.213.2"
 
-# Install Azure Dependencies (https://learn.microsoft.com/ru-ru/azure/devops/pipelines/agents/docker?view=azure-devops)
+# To make it easier for build and release pipelines to run apt-get,
+# configure apt to not require confirmation (assume the -y argument by default)
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y -qq --no-install-recommends \
-    apt-transport-https \
-    apt-utils \
-    ca-certificates \
-    curl \
-    git \
-    iputils-ping \
-    jq \
-    lsb-release \
-    software-properties-common \
-    netcat \
-    python3-pip
+RUN echo "APT::Get::Assume-Yes \"true\";" > /etc/apt/apt.conf.d/90assumeyes
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+        jq \
+        git \
+        iputils-ping \
+        libcurl4 \
+        libicu60 \
+        libunwind8 \
+        netcat \
+        libssl1.0
 
 WORKDIR /azp
 
-COPY ./install_agent.sh .
-RUN chmod +x install_agent.sh && ./install_agent.sh
-
+# Downloading and installing Azure Pipelines agent
+RUN curl -LsS https://vstsagentpackage.azureedge.net/agent/2.213.2/vsts-agent-linux-x64-2.213.2.tar.gz | tar -xz & wait $!
 COPY ./start.sh .
 RUN chmod +x start.sh
 
 # Install Docker
-RUN curl -sL https://get.docker.com | bash
-RUN usermod -aG docker $(whoami)
+RUN curl -LsS https://get.docker.com | bash \
+    && usermod -aG docker $(whoami)
 
 # Install Docker-Compose
-RUN curl -L "https://github.com/docker/compose/releases/download/2.15.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose \
+RUN curl -LsS "https://github.com/docker/compose/releases/download/2.15.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose \
     && chmod +x /usr/local/bin/docker-compose
 
 # Install Microsoft .NET Core SDK 2.1 (for GitVersion task)
-RUN curl https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -o packages-microsoft-prod.deb \
+RUN curl -LsS https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb -o packages-microsoft-prod.deb \
     && dpkg -i packages-microsoft-prod.deb \
-    && apt-get update \ 
-    && apt-get install -y dotnet-sdk-2.1
-
-ENTRYPOINT [ "./start.sh" ]
+    && rm packages-microsoft-prod.deb \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends dotnet-sdk-2.1
