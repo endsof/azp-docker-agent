@@ -28,10 +28,7 @@ RUN chmod +x start.sh
 
 # Install Docker
 RUN curl -LsS https://get.docker.com | bash \
-    && usermod -aG docker $(whoami)
-
-# Install Docker-Compose
-RUN curl -LsS "https://github.com/docker/compose/releases/download/2.15.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose \
+    && echo 'docker compose "$@"' > /usr/local/bin/docker-compose \ 
     && chmod +x /usr/local/bin/docker-compose
 
 # Install Microsoft .NET Core SDK 2.1 (for GitVersion task)
